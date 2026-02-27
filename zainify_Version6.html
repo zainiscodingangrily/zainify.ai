@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zainify - AI Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #10a37f;
+            --secondary: #f0f0f0;
+            --bg-dark: #0d0d0d;
+            --bg-light: #ffffff;
+            --text-primary: #333;
+            --text-secondary: #666;
+            --border: #e5e5e5;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0d0d0d 0%, #1a1a1a 100%);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: var(--bg-light);
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-light);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: -1px;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .new-chat-btn {
+            padding: 8px 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .new-chat-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .settings-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            color: var(--text-secondary);
+            transition: color 0.2s;
+            padding: 8px;
+        }
+
+        .settings-btn:hover {
+            color: var(--text-primary);
+        }
+
+        /* ===== CHAT AREA ===== */
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .messages-area::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .messages-area::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .messages-area::-webkit-scrollbar-thumb {
+            background: #ddd;
+            border-radius: 3px;
+        }
+
+        .messages-area::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 56px;
+            margin-bottom: 16px;
+            opacity: 0.6;
+        }
+
+        .empty-state h2 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            max-width: 300px;
+            color: var(--text-secondary);
+        }
+
+        .message-group {
+            display: flex;
+            gap: 12px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .message-group.user {
+            justify-content: flex-end;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message {
+            max-width: 65%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 15px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .message.ai {
+            background: var(--secondary);
+            color: var(--text-primary);
+            border-radius: 12px 12px 12px 0;
+        }
+
+        .message.user {
+            background: var(--primary);
+            color: white;
+            border-radius: 12px 12px 0 12px;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
+            background: var(--secondary);
+            border-radius: 12px;
+            width: fit-content;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #999;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                opacity: 0.5;
+                transform: translateY(0);
+            }
+            30% {
+                opacity: 1;
+                transform: translateY(-8px);
+            }
+        }
+
+        /* ===== INPUT AREA ===== */
+        .input-area {
+            padding: 16px 24px 24px;
+            border-top: 1px solid var(--border);
+            background: var(--bg-light);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 8px;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: none;
+            max-height: 100px;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(16, 163, 127, 0.1);
+        }
+
+        .input-field::placeholder {
+            color: #999;
+        }
+
+        .send-btn {
+            padding: 12px 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ===== FOOTER / CREDIT BAR ===== */
+        .credit-bar {
+            padding: 12px 24px;
+            border-top: 1px solid var(--border);
+            background: var(--bg-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        .credit-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-secondary);
+        }
+
+        .credit-bar-label {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .credit-meter {
+            width: 150px;
+            height: 6px;
+            background: var(--secondary);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .credit-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #0f9f7f);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .credit-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            min-width: 50px;
+            text-align: right;
+        }
+
+        /* ===== SETTINGS MODAL ===== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .modal-footer button {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .modal-footer button.primary {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .modal-footer button.primary:hover {
+            opacity: 0.9;
+        }
+
+        .modal-footer button:not(.primary):hover {
+            background: var(--secondary);
+        }
+
+        .info-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 12px;
+            padding: 12px;
+            background: var(--secondary);
+            border-radius: 6px;
+            line-height: 1.5;
+        }
+
+        .error-message {
+            padding: 12px 16px;
+            background: #fee;
+            color: #c33;
+            border-radius: 6px;
+            font-size: 13px;
+            margin: 16px 0;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .success-message {
+            padding: 12px 16px;
+            background: #efe;
+            color: #3c3;
+            border-radius: 6px;
+            font-size: 13px;
+            margin: 16px 0;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @media (max-width: 768px) {
+            .message {
+                max-width: 85%;
+            }
+
+            .header {
+                padding: 12px 16px;
+            }
+
+            .messages-area {
+                padding: 16px;
+            }
+
+            .input-area {
+                padding: 12px 16px 16px;
+            }
+
+            .credit-bar {
+                padding: 10px 16px;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .credit-info {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- HEADER -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">✨ Zainify</div>
+            </div>
+            <div class="header-right">
+                <button class="new-chat-btn" id="newChatBtn">
+                    <span>↺</span> New Chat
+                </button>
+                <button class="settings-btn" id="settingsBtn">⚙️</button>
+            </div>
+        </header>
+
+        <!-- MESSAGES AREA -->
+        <div class="messages-area" id="messagesArea">
+            <div class="empty-state">
+                <div class="empty-state-icon">✨</div>
+                <h2>Welcome to Zainify</h2>
+                <p>Ask me anything and I'll help you</p>
+            </div>
+        </div>
+
+        <!-- INPUT AREA -->
+        <div class="input-area">
+            <div class="input-wrapper">
+                <textarea class="input-field" id="inputField" placeholder="Message Zainify..." rows="1"></textarea>
+                <button class="send-btn" id="sendBtn">➤</button>
+            </div>
+        </div>
+
+        <!-- CREDIT BAR -->
+        <div class="credit-bar">
+            <div class="credit-info">
+                <span class="credit-bar-label">Credits:</span>
+                <div class="credit-meter">
+                    <div class="credit-fill" id="creditFill" style="width: 100%;"></div>
+                </div>
+                <span class="credit-text" id="creditText">100%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button class="close-btn" id="closeModalBtn">✕</button>
+            </div>
+
+            <div class="form-group">
+                <label for="provider">API Provider</label>
+                <select id="provider">
+                    <option value="openai">OpenAI (GPT-4 Turbo)</option>
+                    <option value="anthropic">Anthropic (Claude 3.5 Sonnet)</option>
+                    <option value="gemini">Google Gemini Pro</option>
+                    <option value="mistral">Mistral AI</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="apiKey">API Key *</label>
+                <input type="password" id="apiKey" placeholder="Paste your API key here">
+                <div class="info-text">
+                    🔒 Your API key is stored locally in your browser and never sent to any server except the API provider.
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="model">Model (Optional)</label>
+                <input type="text" id="model" placeholder="Leave empty for default model">
+            </div>
+
+            <div class="form-group">
+                <label for="credits">Monthly Credits (for tracking)</label>
+                <input type="number" id="credits" placeholder="e.g., 100" value="100">
+            </div>
+
+            <div class="modal-footer">
+                <button id="cancelBtn">Cancel</button>
+                <button class="primary" id="saveBtn">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== STATE MANAGEMENT =====
+        const state = {
+            apiKey: localStorage.getItem('apiKey') || '',
+            provider: localStorage.getItem('provider') || 'openai',
+            model: localStorage.getItem('model') || '',
+            maxCredits: parseInt(localStorage.getItem('maxCredits')) || 100,
+            creditsUsed: parseInt(localStorage.getItem('creditsUsed')) || 0,
+            isLoading: false
+        };
+
+        // ===== DOM ELEMENTS =====
+        const newChatBtn = document.getElementById('newChatBtn');
+        const messagesArea = document.getElementById('messagesArea');
+        const inputField = document.getElementById('inputField');
+        const sendBtn = document.getElementById('sendBtn');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsModal = document.getElementById('settingsModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const apiKeyInput = document.getElementById('apiKey');
+        const providerSelect = document.getElementById('provider');
+        const modelInput = document.getElementById('model');
+        const creditsInput = document.getElementById('credits');
+        const creditFill = document.getElementById('creditFill');
+        const creditText = document.getElementById('creditText');
+
+        // ===== API CONFIG =====
+        const API_CONFIGS = {
+            openai: {
+                endpoint: 'https://api.openai.com/v1/chat/completions',
+                model: 'gpt-4-turbo',
+                headers: (key) => ({
+                    'Authorization': `Bearer ${key}`,
+                    'Content-Type': 'application/json'
+                })
+            },
+            anthropic: {
+                endpoint: 'https://api.anthropic.com/v1/messages',
+                model: 'claude-3-5-sonnet-20241022',
+                headers: (key) => ({
+                    'x-api-key': key,
+                    'anthropic-version': '2023-06-01',
+                    'Content-Type': 'application/json'
+                })
+            },
+            gemini: {
+                endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
+                model: 'gemini-pro',
+                headers: (key) => ({
+                    'Content-Type': 'application/json'
+                })
+            },
+            mistral: {
+                endpoint: 'https://api.mistral.ai/v1/chat/completions',
+                model: 'mistral-large-latest',
+                headers: (key) => ({
+                    'Authorization': `Bearer ${key}`,
+                    'Content-Type': 'application/json'
+                })
+            }
+        };
+
+        // ===== INITIALIZATION =====
+        function init() {
+            setupEventListeners();
+            apiKeyInput.value = state.apiKey;
+            providerSelect.value = state.provider;
+            modelInput.value = state.model;
+            creditsInput.value = state.maxCredits;
+            updateCreditBar();
+        }
+
+        // ===== EVENT LISTENERS =====
+        function setupEventListeners() {
+            newChatBtn.addEventListener('click', startNewChat);
+            sendBtn.addEventListener('click', handleSendMessage);
+            inputField.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                }
+            });
+            inputField.addEventListener('input', autoResizeTextarea);
+            settingsBtn.addEventListener('click', openSettings);
+            closeModalBtn.addEventListener('click', closeSettings);
+            cancelBtn.addEventListener('click', closeSettings);
+            saveBtn.addEventListener('click', saveSettings);
+            settingsModal.addEventListener('click', (e) => {
+                if (e.target === settingsModal) closeSettings();
+            });
+        }
+
+        // ===== NEW CHAT =====
+        function startNewChat() {
+            location.reload();
+        }
+
+        // ===== MESSAGES =====
+        function addMessage(role, content) {
+            const messageGroup = document.createElement('div');
+            messageGroup.className = `message-group ${role}`;
+            
+            const message = document.createElement('div');
+            message.className = `message ${role}`;
+            message.textContent = content;
+            
+            messageGroup.appendChild(message);
+            messagesArea.appendChild(messageGroup);
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const messageGroup = document.createElement('div');
+            messageGroup.className = 'message-group ai';
+            messageGroup.innerHTML = `
+                <div class="typing-indicator" id="typingIndicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            `;
+            messagesArea.appendChild(messageGroup);
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) {
+                indicator.parentElement.parentElement.remove();
+            }
+        }
+
+        function clearEmptyState() {
+            const emptyState = messagesArea.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+        }
+
+        // ===== SEND MESSAGE =====
+        async function handleSendMessage() {
+            const text = inputField.value.trim();
+            if (!text || state.isLoading) return;
+
+            if (!state.apiKey) {
+                showNotification('Please configure your API key in settings', 'error');
+                openSettings();
+                return;
+            }
+
+            clearEmptyState();
+            inputField.value = '';
+            inputField.style.height = '44px';
+            addMessage('user', text);
+
+            state.isLoading = true;
+            sendBtn.disabled = true;
+            showTypingIndicator();
+
+            try {
+                const response = await callAPI(text);
+                removeTypingIndicator();
+                addMessage('ai', response);
+                updateCreditsUsed();
+            } catch (error) {
+                removeTypingIndicator();
+                showNotification(error.message, 'error');
+            } finally {
+                state.isLoading = false;
+                sendBtn.disabled = false;
+                inputField.focus();
+            }
+        }
+
+        async function callAPI(message) {
+            const config = API_CONFIGS[state.provider];
+            const model = state.model || config.model;
+
+            if (state.provider === 'openai' || state.provider === 'mistral') {
+                const response = await fetch(config.endpoint, {
+                    method: 'POST',
+                    headers: config.headers(state.apiKey),
+                    body: JSON.stringify({
+                        model,
+                        messages: [{ role: 'user', content: message }],
+                        temperature: 0.7,
+                        max_tokens: 2000
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error?.message || `API Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                return data.choices[0].message.content;
+            }
+
+            if (state.provider === 'anthropic') {
+                const response = await fetch(config.endpoint, {
+                    method: 'POST',
+                    headers: config.headers(state.apiKey),
+                    body: JSON.stringify({
+                        model,
+                        max_tokens: 2000,
+                        messages: [{ role: 'user', content: message }]
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error?.message || `API Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                return data.content[0].text;
+            }
+
+            if (state.provider === 'gemini') {
+                const response = await fetch(`${config.endpoint}?key=${state.apiKey}`, {
+                    method: 'POST',
+                    headers: config.headers(state.apiKey),
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: message }] }]
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error?.message || `API Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                return data.candidates[0].content.parts[0].text;
+            }
+
+            throw new Error('Provider not supported');
+        }
+
+        // ===== SETTINGS =====
+        function openSettings() {
+            settingsModal.classList.add('active');
+        }
+
+        function closeSettings() {
+            settingsModal.classList.remove('active');
+        }
+
+        function saveSettings() {
+            const apiKey = apiKeyInput.value.trim();
+            if (!apiKey) {
+                showNotification('Please enter an API key', 'error');
+                return;
+            }
+
+            state.apiKey = apiKey;
+            state.provider = providerSelect.value;
+            state.model = modelInput.value.trim();
+            state.maxCredits = parseInt(creditsInput.value) || 100;
+
+            localStorage.setItem('apiKey', state.apiKey);
+            localStorage.setItem('provider', state.provider);
+            localStorage.setItem('model', state.model);
+            localStorage.setItem('maxCredits', state.maxCredits);
+
+            updateCreditBar();
+            closeSettings();
+            showNotification('Settings saved successfully', 'success');
+        }
+
+        // ===== CREDITS =====
+        function updateCreditsUsed() {
+            state.creditsUsed += 1;
+            localStorage.setItem('creditsUsed', state.creditsUsed);
+            updateCreditBar();
+        }
+
+        function updateCreditBar() {
+            const remainingCredits = Math.max(0, state.maxCredits - state.creditsUsed);
+            const percentage = (remainingCredits / state.maxCredits) * 100;
+            
+            creditFill.style.width = percentage + '%';
+            creditText.textContent = Math.ceil(percentage) + '%';
+
+            if (percentage < 20) {
+                creditFill.style.background = 'linear-gradient(90deg, #ff6b6b, #ff8c8c)';
+            } else if (percentage < 50) {
+                creditFill.style.background = 'linear-gradient(90deg, #ffa500, #ffb84d)';
+            } else {
+                creditFill.style.background = 'linear-gradient(90deg, var(--primary), #0f9f7f)';
+            }
+        }
+
+        // ===== UTILITIES =====
+        function autoResizeTextarea() {
+            inputField.style.height = '44px';
+            inputField.style.height = Math.min(inputField.scrollHeight, 100) + 'px';
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `${type}-message`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // ===== START =====
+        init();
+    </script>
+</body>
+</html>
